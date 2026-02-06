@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Work Focus Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            background: #0f0f0f;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-display {
+            font-size: 72px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin: 40px 0;
+            font-variant-numeric: tabular-nums;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            height: 20px;
+            color: #888;
+        }
+
+        .status.work {
+            color: #4ade80;
+        }
+
+        .status.break {
+            color: #60a5fa;
+        }
+
+        .status.paused {
+            color: #fbbf24;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 20px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background: #444;
+            border-color: #555;
+        }
+
+        button.primary {
+            background: #4ade80;
+            color: #000;
+            border-color: #4ade80;
+            flex: 2;
+        }
+
+        button.primary:hover {
+            background: #22c55e;
+        }
+
+        button.pause {
+            background: #fbbf24;
+            color: #000;
+            border-color: #fbbf24;
+        }
+
+        button.pause:hover {
+            background: #f59e0b;
+        }
+
+        button.reset {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        button.reset:hover {
+            background: #dc2626;
+        }
+
+        .settings {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid #333;
+        }
+
+        .setting-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .setting-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            min-width: 120px;
+            text-align: left;
+        }
+
+        input[type="number"] {
+            width: 70px;
+            padding: 8px 12px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4ade80;
+            background: #2a2a2a;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4ade80;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        .progress-fill.break {
+            background: #60a5fa;
+        }
+
+        .session-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .session-info strong {
+            color: #999;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .timer-display {
+                font-size: 56px;
+                margin: 30px 0;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .setting-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Deep Work Focus</h1>
+        
+        <div class="status" id="status">Ready</div>
+        
+        <div class="timer-display" id="display">25:00</div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="controls">
+            <button class="primary" id="startBtn">Start</button>
+            <button class="pause" id="pauseBtn" style="display: none;">Pause</button>
+            <button class="reset" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="settings">
+            <div class="setting-group">
+                <label for="workDuration">Work (min)</label>
+                <input type="number" id="workDuration" min="1" max="120" value="25">
+            </div>
+            <div class="setting-group">
+                <label for="breakDuration">Break (min)</label>
+                <input type="number" id="breakDuration" min="1" max="30" value="5">
+            </div>
+        </div>
+
+        <div class="session-info">
+            <strong>Sessions completed:</strong> <span id="sessionCount">0</span><br>
+            <strong>Total focus time:</strong> <span id="totalTime">0m</span>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+        let timeRemaining = 25 * 60;
+        let totalDuration = 25 * 60;
+        let isRunning = false;
+        let isWorkSession = true;
+        let sessionsCompleted = 0;
+        let totalFocusTime = 0;
+
+        const display = document.getElementById('display');
+        const status = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const workInput = document.getElementById('workDuration');
+        const breakInput = document.getElementById('breakDuration');
+        const progress = document.getElementById('progress');
+        const sessionCountEl = document.getElementById('sessionCount');
+        const totalTimeEl = document.getElementById('totalTime');
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            display.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            const progressPercent = ((totalDuration - timeRemaining) / totalDuration) * 100;
+            progress.style.width = progressPercent + '%';
+        }
+
+        function updateStatus() {
+            if (!isRunning) {
+                status.textContent = 'Paused';
+                status.className = 'status paused';
+            } else if (isWorkSession) {
+                status.textContent = 'Focus Work';
+                status.className = 'status work';
+            } else {
+                status.textContent = 'Break Time';
+                status.className = 'status break';
+            }
+        }
+
+        function tick() {
+            timeRemaining--;
+
+            if (timeRemaining < 0) {
+                switchSession();
+            }
+
+            updateDisplay();
+        }
+
+        function switchSession() {
+            if (isWorkSession) {
+                sessionsCompleted++;
+                totalFocusTime += workInput.value;
+                sessionCountEl.textContent = sessionsCompleted;
+                totalTimeEl.textContent = totalFocusTime + 'm';
+                
+                isWorkSession = false;
+                totalDuration = breakInput.value * 60;
+                timeRemaining = totalDuration;
+                
+                playNotification();
+            } else {
+                isWorkSession = true;
+                totalDuration = workInput.value * 60;
+                timeRemaining = totalDuration;
+                
+                playNotification();
+            }
+
+            progress.classList.toggle('break');
+            updateStatus();
+            updateDisplay();
+        }
+
+        function playNotification() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = isWorkSession ? 800 : 600;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                isRunning = true;
+                timerInterval = setInterval(tick, 1000);
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = 'flex';
+                updateStatus();
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            isRunning = false;
+            clearInterval(timerInterval);
+            pauseBtn.style.display = 'none';
+            startBtn.style.display = 'flex';
+            updateStatus();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            isRunning = false;
+            clearInterval(timerInterval);
+            isWorkSession = true;
+            timeRemaining = workInput.value * 60;
+            totalDuration = timeRemaining;
+            
+            pauseBtn.style.display = 'none';
+            startBtn.style.display = 'flex';
+            
+            progress.classList.remove('break');
+            updateDisplay();
+            updateStatus();
+        });
+
+        workInput.addEventListener('change', () => {
+            if (!isRunning) {
+                timeRemaining = workInput.value * 60;
+                totalDuration = timeRemaining;
+                updateDisplay();
+            }
+        });
+
+        updateDisplay();
+        updateStatus();
+    </script>
+</body>
+</html>
