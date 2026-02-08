@@ -206,6 +206,127 @@
             color: #999;
         }
 
+        .alarm-settings {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid #333;
+        }
+
+        .alarm-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .alarm-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .alarm-btn {
+            padding: 10px 12px;
+            background: #333;
+            color: #999;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .alarm-btn:hover {
+            background: #444;
+            border-color: #555;
+            color: #fff;
+        }
+
+        .alarm-btn.active {
+            background: #4ade80;
+            border-color: #4ade80;
+            color: #000;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .volume-control label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            margin: 0;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #4ade80;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #4ade80;
+            cursor: pointer;
+            border: none;
+        }
+
+        .volume-value {
+            font-size: 12px;
+            color: #999;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .test-alarm-btn {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .test-alarm-btn:hover {
+            background: #444;
+            border-color: #555;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 30px 20px;
@@ -257,6 +378,24 @@
             </div>
         </div>
 
+        <div class="alarm-settings">
+            <div class="alarm-title">🔔 Alarm Type</div>
+            <div class="alarm-options">
+                <button class="alarm-btn active" data-alarm="bell">Bell</button>
+                <button class="alarm-btn" data-alarm="chime">Chime</button>
+                <button class="alarm-btn" data-alarm="beep">Beep</button>
+                <button class="alarm-btn" data-alarm="alert">Alert</button>
+            </div>
+
+            <div class="volume-control">
+                <label for="volumeSlider">Volume</label>
+                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+                <span class="volume-value" id="volumeValue">70%</span>
+            </div>
+
+            <button class="test-alarm-btn" id="testAlarmBtn">Test Alarm</button>
+        </div>
+
         <div class="session-info">
             <strong>Sessions completed:</strong> <span id="sessionCount">0</span><br>
             <strong>Total focus time:</strong> <span id="totalTime">0m</span>
@@ -271,6 +410,8 @@
         let isWorkSession = true;
         let sessionsCompleted = 0;
         let totalFocusTime = 0;
+        let alarmType = 'bell';
+        let volume = 0.7;
 
         const display = document.getElementById('display');
         const status = document.getElementById('status');
@@ -282,6 +423,140 @@
         const progress = document.getElementById('progress');
         const sessionCountEl = document.getElementById('sessionCount');
         const totalTimeEl = document.getElementById('totalTime');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        const testAlarmBtn = document.getElementById('testAlarmBtn');
+
+        // Alarm type selection
+        document.querySelectorAll('[data-alarm]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('[data-alarm]').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                alarmType = e.target.dataset.alarm;
+            });
+        });
+
+        // Volume control
+        volumeSlider.addEventListener('input', (e) => {
+            volume = e.target.value / 100;
+            volumeValue.textContent = e.target.value + '%';
+        });
+
+        // Test alarm button
+        testAlarmBtn.addEventListener('click', () => {
+            playAlarm();
+        });
+
+        function playAlarm() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            switch(alarmType) {
+                case 'bell':
+                    playBell(audioContext);
+                    break;
+                case 'chime':
+                    playChime(audioContext);
+                    break;
+                case 'beep':
+                    playBeep(audioContext);
+                    break;
+                case 'alert':
+                    playAlert(audioContext);
+                    break;
+            }
+        }
+
+        function playBell(ctx) {
+            const now = ctx.currentTime;
+            const duration = 1.5;
+            
+            // Multiple bell tones
+            const frequencies = [523.25, 523.25, 659.25, 783.99];
+            const timings = [0, 0.3, 0.6, 0.9];
+            
+            frequencies.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                
+                gain.gain.setValueAtTime(volume * 0.3, now + timings[i]);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + timings[i] + 0.25);
+                
+                osc.start(now + timings[i]);
+                osc.stop(now + timings[i] + 0.25);
+            });
+        }
+
+        function playChime(ctx) {
+            const now = ctx.currentTime;
+            const frequencies = [784, 988, 1184];
+            
+            frequencies.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                
+                gain.gain.setValueAtTime(volume * 0.25, now + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.5);
+                
+                osc.start(now + i * 0.15);
+                osc.stop(now + i * 0.15 + 0.5);
+            });
+        }
+
+        function playBeep(ctx) {
+            const now = ctx.currentTime;
+            
+            for (let i = 0; i < 3; i++) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.value = 800;
+                osc.type = 'square';
+                
+                const startTime = now + i * 0.2;
+                gain.gain.setValueAtTime(volume * 0.4, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.15);
+            }
+        }
+
+        function playAlert(ctx) {
+            const now = ctx.currentTime;
+            const duration = 2;
+            
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(1000, now + duration / 2);
+            osc.frequency.exponentialRampToValueAtTime(600, now + duration);
+            osc.type = 'triangle';
+            
+            gain.gain.setValueAtTime(volume * 0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            
+            osc.start(now);
+            osc.stop(now + duration);
+        }
 
         function updateDisplay() {
             const minutes = Math.floor(timeRemaining / 60);
@@ -316,6 +591,8 @@
         }
 
         function switchSession() {
+            playAlarm();
+            
             if (isWorkSession) {
                 sessionsCompleted++;
                 totalFocusTime += workInput.value;
@@ -325,37 +602,15 @@
                 isWorkSession = false;
                 totalDuration = breakInput.value * 60;
                 timeRemaining = totalDuration;
-                
-                playNotification();
             } else {
                 isWorkSession = true;
                 totalDuration = workInput.value * 60;
                 timeRemaining = totalDuration;
-                
-                playNotification();
             }
 
             progress.classList.toggle('break');
             updateStatus();
             updateDisplay();
-        }
-
-        function playNotification() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.frequency.value = isWorkSession ? 800 : 600;
-            oscillator.type = 'sine';
-
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
         }
 
         startBtn.addEventListener('click', () => {
